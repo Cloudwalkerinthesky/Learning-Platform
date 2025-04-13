@@ -1,0 +1,40 @@
+server:
+  port: '@course.service.port@'
+  address: 0.0.0.0
+spring:
+  datasource:
+    url: jdbc:mysql://localhost:3306/db_course?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+    username: root
+    password: 1234
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  application:
+    name: course-service
+  cloud:
+    nacos:
+      discovery:
+        server-addr: 127.0.0.1:8848
+        ip: 127.0.0.1
+#        server-addr: 127.0.0.1:8848
+  redis:
+    host: my-redis
+#    主机地址127.0.0.1 （回环地址）
+#    host: 192.168.150.101  #虚拟机ip地址
+    port: 6379
+    database: 0 #redis默认支持16个数据库，默认为为0
+    timeout: 10000ms #默认2000ms
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest
+  servlet:
+    multipart:
+      max-file-size: -1
+      max-request-size: -1
+
+
+mybatis:
+#  mapper-locations: classpath:mapper/*Mapper.xml
+  type-aliases-package: com.phantom.courseservice
+  configuration:
+    use-underscore-to-camel-case: true

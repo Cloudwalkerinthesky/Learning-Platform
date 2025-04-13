@@ -1,0 +1,52 @@
+server:
+  port: @learning.service.port@
+
+spring:
+  application:
+    name: learning-service
+  cloud:
+    nacos:
+      discovery:
+        server-addr: 127.0.0.1:8848
+        ip: 127.0.0.1
+  redis:
+    host: 192.168.150.101 #虚拟机ip地址
+    port: 6379
+  #     host: localhost
+  datasource:
+    url: jdbc:mysql://localhost:3306/db_learning?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai
+    username: root
+    password: 1234
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest
+    virtual-host: /
+    listener:
+      simple:
+        allowed-list-patterns: java.util.HashMap,java.util.*
+        deserialization.trust-all: true
+        acknowledge-mode: manual
+        prefetch: 1
+        concurrency: 1
+        retry:
+          enable: true
+          max-attempts: 3
+          initial-interval: 1s
+
+
+#  amqp:
+#    deserialization:
+#      trust-all: true
+
+mybatis:
+  type-aliases-package: com.phantom.learningservice.bean.po
+  configuration:
+    use-underscore-to-camel-case: true
+

@@ -1,0 +1,119 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>com.phantom</groupId>
+  <artifactId>CoursePlatform2</artifactId>
+  <version>1.0-SNAPSHOT</version>
+  <packaging>pom</packaging>
+
+  <name>CoursePlatform2</name>
+  <url>http://maven.apache.org</url>
+
+  <modules>
+    <module>user-service</module>
+    <module>course-service</module>
+    <module>learning-service</module>
+    <module>comment-service</module>
+    <module>api-gateway</module>
+    <module>common</module>
+  </modules>
+
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <mysql.version>8.0.33</mysql.version>
+    <mybatis.starter.version>2.3.1</mybatis.starter.version>
+  </properties>
+
+  <parent>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-parent</artifactId>
+    <version>2.7.18</version>
+    <relativePath/>
+  </parent>
+
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.springframework.cloud</groupId>
+        <artifactId>spring-cloud-dependencies</artifactId>
+        <version>2021.0.9</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>com.alibaba.cloud</groupId>
+        <artifactId>spring-cloud-alibaba-dependencies</artifactId>
+        <version>2021.0.5.0</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+  <profiles>
+    <profile>
+      <id>dev</id>
+      <properties>
+        <user.service.port>1234</user.service.port>
+        <course.service.port>1235</course.service.port>
+        <learning.service.port>1236</learning.service.port>
+        <comment.service.port>1237</comment.service.port>
+        <api.gateway.port>1238</api.gateway.port>
+      </properties>
+    </profile>
+
+    <profile>
+      <id>test</id>
+      <properties>
+        <user.service.port>2234</user.service.port>
+        <course.service.port>2235</course.service.port>
+        <learning.service.port>2236</learning.service.port>
+        <comment.service.port>2237</comment.service.port>
+        <api.gateway.port>2238</api.gateway.port>
+      </properties>
+
+    </profile>
+
+    <profile>
+      <id>prod</id>
+      <properties>
+        <user.service.port>3234</user.service.port>
+        <course.service.port>3235</course.service.port>
+        <learning.service.port>3236</learning.service.port>
+        <comment.service.port>3237</comment.service.port>
+        <api.gateway.port>3238</api.gateway.port>
+      </properties>
+    </profile>
+  </profiles>
+
+  <build>
+    <resources>
+      <resource>
+        <directory>src/main/resources</directory>
+        <filtering>true</filtering>
+      </resource>
+    </resources>
+
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>3.13.0</version>
+        <configuration>
+          <source>17</source>
+          <target>17</target>
+        </configuration>
+      </plugin>
+    </plugins>
+
+  </build>
+
+</project>

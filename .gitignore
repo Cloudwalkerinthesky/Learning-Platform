@@ -1,0 +1,45 @@
+# Compiled class file
+*.class
+
+# Log file
+*.log
+
+# Package Files
+*.jar
+*.war
+*.nar
+*.ear
+*.zip
+*.tar.gz
+*.rar
+
+# IDE files
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+.settings/
+.classpath
+.project
+
+# Maven
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/timing.properties
+
+# Spring Boot
+application-*.yml
+application-*.properties
+!application.yml
+!application.properties
+
+# Others
+.DS_Store
+Thumbs.db 

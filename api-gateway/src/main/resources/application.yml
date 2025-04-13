@@ -1,0 +1,62 @@
+server:
+  port: @api.gateway.port@
+
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    nacos:
+      discovery:
+        server-addr: 127.0.0.1:8848
+        ip: 127.0.0.1
+    gateway:
+      discovery:
+        locator:
+          enabled: true
+          lower-case-service-id: true
+      routes:
+        - id: BaiduTest01
+          uri: https://www.baidu.com
+          predicates:
+            - Path=/baidu
+          filters:
+            - StripPrefix=1
+        - id: user-service
+          uri: lb://user-service
+          predicates:
+            - Path=/api/user/**
+          filters:
+            - StripPrefix=1
+#            - name: RequestRateLimiter
+#              args:
+#                redis-rate-limiter.replenishRate: 10
+#                redis-rate-limiter.burstCapacity: 20
+#                key-resolver: "#{@userKeyResolver}"
+        - id: course-service
+          uri: lb://course-service
+          predicates:
+            - Path=/api/course/**
+          filters:
+            - StripPrefix=1
+        - id: learning-service
+          uri: lb://learning-service
+          predicates:
+            - Path=/api/learning/**
+          filters:
+            - StripPrefix=1
+        - id: comment-service
+          uri: lb://comment-service
+          predicates:
+            - Path=/api/comment/**
+          filters:
+            - StripPrefix=1
+  redis:
+    host: localhost
+    port: 6379
+
+logging:
+  level:
+    com.alibaba.nacos: DEBUG
+    org.springframework.cloud.gateway: DEBUG
+    org.springframework.cloud.loadbalancer: DEBUG
+    reactor.netty: DEBUG
