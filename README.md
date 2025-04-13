@@ -1,6 +1,6 @@
 # CoursePlatform2
 
-基于Spring Cloud Alibaba的在线课程平台
+基于Spring Cloud 的在线课程平台
 
 ## 项目介绍
 
