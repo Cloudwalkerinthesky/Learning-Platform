@@ -1,4 +1,4 @@
-# CoursePlatform2
+# 高并发课程学习平台-学在北交
 
 基于Spring Cloud 的在线课程平台
 
