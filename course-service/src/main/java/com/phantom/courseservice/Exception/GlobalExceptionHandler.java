@@ -1,4 +1,4 @@
-package com.phantom.courseservice.Exception;
+package com.phantom.courseservice.exception;
 
 import com.phantom.common.bean.vo.R;
 import org.slf4j.Logger;

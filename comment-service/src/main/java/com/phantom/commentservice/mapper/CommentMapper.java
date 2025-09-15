@@ -2,7 +2,9 @@ package com.phantom.commentservice.mapper;
 
 import com.phantom.commentservice.bean.po.CommentPO;
 import com.phantom.commentservice.bean.vo.CommentVO;
-import org.apache.ibatis.annotations.*;
+import org.apache.ibatis.annotations.Insert;
+import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Select;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;

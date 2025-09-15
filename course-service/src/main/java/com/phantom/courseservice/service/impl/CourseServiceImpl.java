@@ -2,9 +2,10 @@ package com.phantom.courseservice.service.impl;
 
 import com.phantom.common.CourseStatus;
 import com.phantom.common.bean.vo.R;
+import com.phantom.common.context.UserContextHolder;
 import com.phantom.common.event.CourseStatusEvent;
 import com.phantom.courseservice.bean.dto.CourseDTO;
-import com.phantom.courseservice.bean.dto.UserBaseInfoDTO;
+import com.phantom.common.bean.dto.UserBaseInfoDTO;
 import com.phantom.courseservice.bean.po.CoursePo;
 import com.phantom.courseservice.bean.vo.CourseInfoVo;
 import com.phantom.courseservice.mapper.CourseMapper;
@@ -30,7 +31,6 @@ import java.util.List;
 import java.util.Random;
 import java.util.stream.Collectors;
 import java.util.concurrent.TimeUnit;
-import com.phantom.common.context.UserContextHolder;
 
 @Service
 @Slf4j
@@ -95,7 +95,7 @@ public class CourseServiceImpl implements CourseService{
     @Cacheable(value = "courseInfo", key = "#id", unless = "#result == null")
     public CourseInfoVo getCourseInfoById(int id) {
         // 从ThreadLocal获取当前用户信息，无需显式传参
-        com.phantom.common.bean.dto.UserBaseInfoDTO currentUser = UserContextHolder.getUser();
+        UserBaseInfoDTO currentUser = UserContextHolder.getUser();
         if (currentUser != null) {
             log.info("用户 {} 正在查看课程 {}", currentUser.getUsername(), id);
             // 可以在这里添加用户访问记录逻辑
@@ -118,7 +118,7 @@ public class CourseServiceImpl implements CourseService{
     @CacheEvict(value = "courseInfo",allEntries = true)
     public CourseInfoVo createCourse(CourseDTO courseDTO){
         // 从ThreadLocal获取当前用户信息
-        com.phantom.common.bean.dto.UserBaseInfoDTO currentUser = UserContextHolder.getUser();
+        UserBaseInfoDTO currentUser = UserContextHolder.getUser();
         if (currentUser != null) {
             log.info("用户 {} 正在创建课程: {}", currentUser.getUsername(), courseDTO.getCourseName());
             // 可以设置课程创建者
@@ -136,7 +136,7 @@ public class CourseServiceImpl implements CourseService{
     @CacheEvict(value = "courseInfo", key = "#id")
     public CourseInfoVo updateCourse(int id, CourseDTO courseDTO) {
         // 从ThreadLocal获取当前用户信息
-        com.phantom.common.bean.dto.UserBaseInfoDTO currentUser = UserContextHolder.getUser();
+        UserBaseInfoDTO currentUser = UserContextHolder.getUser();
         if (currentUser != null) {
             log.info("用户 {} 正在更新课程 {}", currentUser.getUsername(), id);
             
@@ -169,7 +169,7 @@ public class CourseServiceImpl implements CourseService{
     @CacheEvict(value ="courseInfo",key="#id")
     public void deleteCourse(int id){
         // 从ThreadLocal获取当前用户信息
-        com.phantom.common.bean.dto.UserBaseInfoDTO currentUser = UserContextHolder.getUser();
+        UserBaseInfoDTO currentUser = UserContextHolder.getUser();
         if (currentUser != null) {
             log.info("用户 {} 正在删除课程 {}", currentUser.getUsername(), id);
             
