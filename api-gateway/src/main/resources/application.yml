@@ -4,6 +4,11 @@ server:
 spring:
   application:
     name: api-gateway
+  # Database configuration for user authentication
+  r2dbc:
+    url: r2dbc:mysql://localhost:3306/db_user?useSSL=false&serverTimezone=Asia/Shanghai
+    username: root
+    password: 1234
   cloud:
     nacos:
       discovery:
@@ -21,38 +26,60 @@ spring:
             - Path=/baidu
           filters:
             - StripPrefix=1
+        # User service routes (data management only)
         - id: user-service
           uri: lb://user-service
           predicates:
-            - Path=/api/user/**
+            - Path=/user/**
           filters:
             - StripPrefix=1
-#            - name: RequestRateLimiter
-#              args:
-#                redis-rate-limiter.replenishRate: 10
-#                redis-rate-limiter.burstCapacity: 20
-#                key-resolver: "#{@userKeyResolver}"
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 10
+                redis-rate-limiter.burstCapacity: 20
+                key-resolver: "#{@userKeyResolver}"
         - id: course-service
           uri: lb://course-service
           predicates:
-            - Path=/api/course/**
+            - Path=/course/**
           filters:
             - StripPrefix=1
         - id: learning-service
           uri: lb://learning-service
           predicates:
-            - Path=/api/learning/**
+            - Path=/learning/**
           filters:
             - StripPrefix=1
         - id: comment-service
           uri: lb://comment-service
           predicates:
-            - Path=/api/comment/**
+            - Path=/comment/**
           filters:
             - StripPrefix=1
+      default-filters:
+        - StripPrefix=1
+      accesslog:
+        enabled: true
+        format: '%h %l %u %t "%r" %s %b "%{Referer}i" "%{User-Agent}i" %D'
+        file: logs/gateway-access.log
+        max-size: 50MB
+        max-history: 7
   redis:
     host: localhost
     port: 6379
+  sleuth:
+    sampler:
+      probability: 1.0
+    web:
+      client:
+        enabled: true
+    messaging:
+      enabled: true
+  zipkin:
+    base-url: http://localhost:9411
+    enabled: true
+    service:
+      name: api-gateway
 
 logging:
   level:
@@ -60,3 +87,40 @@ logging:
     org.springframework.cloud.gateway: DEBUG
     org.springframework.cloud.loadbalancer: DEBUG
     reactor.netty: DEBUG
+    org.springframework.cloud.gateway: INFO
+    reactor.netty.http.client: INFO
+    brave: DEBUG
+    zipkin2: DEBUG
+  file:
+    name: logs/api-gateway.log
+    max-size: 50MB
+    max-history: 7
+
+# Actuator 配置
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics,gateway
+  endpoint:
+    health:
+      show-details: always
+    prometheus:
+      enabled: true
+    gateway:
+      enabled: true
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+    tags:
+      application: api-gateway
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+      sla:
+        http.server.requests: 10ms, 50ms, 100ms, 200ms, 500ms
+
+jwt:
+  secret: 4e7d3c8c804c94b087dbf95d88e25d2d8e0817fdfefb7c9b5b00e7c03c387e34
+  expiration: 86400000  # 24小时

@@ -50,3 +50,26 @@ mybatis:
   configuration:
     use-underscore-to-camel-case: true
 
+resilience4j:
+  circuitbreaker:
+    instances:
+      enrollCircuitBreaker:
+        registerHealthIndicator: true
+        slidingWindowSize: 100
+        minimumNumberOfCalls: 10
+        permittedNumberOfCallsInHalfOpenState: 5
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+        waitDurationInOpenState: 5s
+        failureRateThreshold: 50
+        eventConsumerBufferSize: 10
+  ratelimiter:
+    instances:
+      enrollRateLimiter:
+        registerHealthIndicator: true
+        limitForPeriod: 100
+        limitRefreshPeriod: 1s
+        timeoutDuration: 0s
+        allowHealthIndicatorToFail: false
+        eventConsumerBufferSize: 100
+
+

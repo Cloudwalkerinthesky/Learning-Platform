@@ -1,0 +1,29 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: 'api-gateway'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['localhost:1238']
+
+  - job_name: 'user-service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['localhost:1234']
+
+  - job_name: 'course-service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['localhost:1235']
+
+  - job_name: 'learning-service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['localhost:1236']
+
+  - job_name: 'comment-service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['localhost:1237'] 
