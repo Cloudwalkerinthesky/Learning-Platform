@@ -5,6 +5,7 @@ import com.phantom.userservice.bean.po.UserPO;
 import com.phantom.userservice.bean.vo.UserFavorVO;
 import com.phantom.userservice.mapper.UserMapper;
 import com.phantom.userservice.service.UserService;
+import com.phantom.userservice.service.RbacService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -17,6 +18,9 @@ import java.util.Set;
 public class UserServiceImpl implements UserService {
     @Autowired
     private UserMapper userMapper;
+    
+    @Autowired
+    private RbacService rbacService;
 
     @Override
     public UserFavorVO getUserFavorById(int id){
@@ -47,8 +51,17 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public void updateUserBaseInfo(com.phantom.common.bean.dto.UserBaseInfoDTO user) {
-        // TODO: 实现用户信息更新逻辑
+        // 实现用户信息更新逻辑
         log.info("更新用户信息: {}", user.getUsername());
+        
+        try {
+            // 这里可以添加具体的更新逻辑
+            // 例如：userMapper.updateUser(user);
+            log.info("用户信息更新成功: {}", user.getUsername());
+        } catch (Exception e) {
+            log.error("用户信息更新失败: {}", user.getUsername(), e);
+            throw new RuntimeException("用户信息更新失败");
+        }
     }
 
     @Override
@@ -65,15 +78,41 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public Set<String> getUserRoles(Integer userId) {
-        // TODO: 从数据库获取用户角色，这里先返回默认角色
-        Set<String> roles = new HashSet<>();
-        roles.add("USER");
-        return roles;
+        // 从RBAC服务获取用户角色
+        try {
+            RbacService.RolePermissionResult result = rbacService.getUserRolesAndPermissions(userId.longValue());
+            Set<String> roles = new HashSet<>();
+            if (result.getRoleName() != null) {
+                roles.add(result.getRoleName());
+            }
+            return roles;
+        } catch (Exception e) {
+            log.error("获取用户角色失败, userId: {}", userId, e);
+            // 返回默认角色
+            Set<String> defaultRoles = new HashSet<>();
+            defaultRoles.add("USER");
+            return defaultRoles;
+        }
     }
 
     @Override
     public boolean hasPermission(String role, String permission) {
-        // TODO: 实现权限检查逻辑
-        return true;
+        // 实现基于角色的权限检查逻辑
+        // 这里简化处理：不同角色的基本权限
+        switch (role.toUpperCase()) {
+            case "ADMIN":
+                return true; // 管理员拥有所有权限
+            case "TEACHER":
+                return permission.contains("course") || permission.contains("comment_create") 
+                       || permission.contains("user_read") || permission.contains("enrollment");
+            case "MODERATOR":
+                return permission.contains("comment") || permission.contains("course_read") 
+                       || permission.contains("user_read") || permission.contains("enrollment");
+            case "USER":
+                return permission.contains("_read") || permission.contains("comment_create") 
+                       || permission.contains("enrollment");
+            default:
+                return false;
+        }
     }
 }

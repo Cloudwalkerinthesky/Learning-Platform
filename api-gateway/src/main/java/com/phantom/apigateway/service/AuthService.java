@@ -11,10 +11,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.ReactiveRedisTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @Service
@@ -25,12 +28,13 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtUtils jwtUtils;
     private final ReactiveRedisTemplate<String, String> redisTemplate;
+    private final WebClient.Builder webClientBuilder;
     
     private static final String LOGIN_TOKEN_PREFIX = "login:user:";
     private static final Duration TOKEN_EXPIRE_TIME = Duration.ofHours(24);
     
     /**
-     * 用户登录
+     * 用户登录 - 集成RBAC权限
      */
     public Mono<String> login(LoginRequest request) {
         return userRepository.findByUsername(request.getUsername())
@@ -38,23 +42,76 @@ public class AuthService {
             .filter(user -> passwordEncoder.matches(request.getPassword(), user.getPassword()))
             .switchIfEmpty(Mono.error(new RuntimeException("用户名或密码错误")))
             .flatMap(user -> {
-                // 生成JWT token
-                UserBaseInfoDTO userInfo = convertToDTO(user);
-                String token = jwtUtils.generateToken(userInfo);
-                
-                // 保存token到Redis
-                String redisKey = LOGIN_TOKEN_PREFIX + user.getId();
-                return redisTemplate.opsForValue()
-                    .set(redisKey, token, TOKEN_EXPIRE_TIME)
-                    .thenReturn(token)
-                    .doOnSuccess(t -> log.info("用户 {} 登录成功", user.getUsername()))
-                    .doOnError(e -> log.error("Redis保存token失败", e));
+                // 获取用户角色权限信息 - 修复类型转换
+                return getUserRolesAndPermissions(user.getId().longValue())
+                    .flatMap(rolePermissions -> {
+                        // 生成包含角色权限的JWT token
+                        UserBaseInfoDTO userInfo = convertToDTO(user);
+                        
+                        // 添加角色信息到用户信息中
+                        if (rolePermissions.containsKey("role")) {
+                            userInfo.addRole(rolePermissions.get("role").toString());
+                        }
+                        
+                        String token = jwtUtils.generateTokenWithRolePermissions(
+                            userInfo, 
+                            rolePermissions.get("role") != null ? rolePermissions.get("role").toString() : "USER",
+                            getPermissionsList(rolePermissions.get("permissions"))
+                        );
+                        
+                        // 保存token到Redis
+                        String redisKey = LOGIN_TOKEN_PREFIX + user.getId();
+                        return redisTemplate.opsForValue()
+                            .set(redisKey, token, TOKEN_EXPIRE_TIME)
+                            .thenReturn(token)
+                            .doOnSuccess(t -> log.info("用户 {} 登录成功，角色: {}", 
+                                user.getUsername(), rolePermissions.get("role")))
+                            .doOnError(e -> log.error("Redis保存token失败", e));
+                    })
+                    .onErrorResume(e -> {
+                        log.warn("获取用户角色权限失败，使用默认权限: {}", e.getMessage());
+                        // 降级处理：使用默认权限
+                        UserBaseInfoDTO userInfo = convertToDTO(user);
+                        userInfo.addRole("USER");
+                        String token = jwtUtils.generateTokenWithRolePermissions(userInfo, "USER", List.of());
+                        
+                        String redisKey = LOGIN_TOKEN_PREFIX + user.getId();
+                        return redisTemplate.opsForValue()
+                            .set(redisKey, token, TOKEN_EXPIRE_TIME)
+                            .thenReturn(token);
+                    });
             })
             .doOnError(e -> log.warn("登录失败: {}", e.getMessage()));
     }
     
     /**
-     * 用户注册
+     * 调用user-service获取用户角色权限
+     */
+    private Mono<Map<String, Object>> getUserRolesAndPermissions(Long userId) {
+        return webClientBuilder.build()
+            .get()
+            .uri("http://user-service/user/rbac/roles-permissions/{userId}", userId)
+            .retrieve()
+            .bodyToMono(Map.class)
+            .map(response -> {
+                if (response.get("code").equals(200)) {
+                    Object data = response.get("data");
+                    if (data instanceof Map) {
+                        @SuppressWarnings("unchecked")
+                        Map<String, Object> result = (Map<String, Object>) data;
+                        return result;
+                    } else {
+                        throw new RuntimeException("获取角色权限失败: 数据格式错误");
+                    }
+                } else {
+                    throw new RuntimeException("获取角色权限失败: " + response.get("message"));
+                }
+            })
+            .doOnError(e -> log.error("调用user-service获取角色权限失败", e));
+    }
+    
+    /**
+     * 用户注册 - 集成RBAC
      */
     public Mono<Void> register(RegisterRequest request) {
         return userRepository.countByUsername(request.getUsername())
@@ -71,9 +128,44 @@ public class AuthService {
                 return user;
             }))
             .flatMap(userRepository::save)
-            .doOnSuccess(user -> log.info("用户 {} 注册成功", user.getUsername()))
-            .doOnError(e -> log.error("注册失败", e))
-            .then();
+            .flatMap(user -> {
+                // 为新用户分配默认角色
+                return assignDefaultRoleToUser(user.getId().longValue())
+                    .doOnSuccess(success -> {
+                        if (success) {
+                            log.info("用户 {} 注册成功，已分配默认角色", user.getUsername());
+                        } else {
+                            log.warn("用户 {} 注册成功，但分配默认角色失败", user.getUsername());
+                        }
+                    })
+                    .onErrorResume(e -> {
+                        log.warn("用户 {} 注册成功，但分配默认角色失败: {}", user.getUsername(), e.getMessage());
+                        return Mono.just(false); // 降级处理，不影响注册流程
+                    })
+                    .then();
+            })
+            .doOnError(e -> log.error("注册失败", e));
+    }
+    
+    /**
+     * 为用户分配默认角色
+     */
+    private Mono<Boolean> assignDefaultRoleToUser(Long userId) {
+        return webClientBuilder.build()
+            .post()
+            .uri("http://user-service/user/rbac/assign-role?userId={userId}&roleName={roleName}", 
+                 userId, "USER")
+            .retrieve()
+            .bodyToMono(Map.class)
+            .map(response -> {
+                if (response.get("code").equals(200)) {
+                    return true;
+                } else {
+                    log.error("分配默认角色失败: {}", response.get("message"));
+                    return false;
+                }
+            })
+            .onErrorReturn(false);
     }
     
     /**
@@ -142,5 +234,17 @@ public class AuthService {
         dto.setUsername(user.getUsername());
         dto.setAccount(user.getAccount());
         return dto;
+    }
+    
+    /**
+     * 安全地转换权限列表
+     */
+    private List<String> getPermissionsList(Object permissions) {
+        if (permissions instanceof List) {
+            @SuppressWarnings("unchecked")
+            List<String> result = (List<String>) permissions;
+            return result;
+        }
+        return List.of(); // 返回空列表作为默认值
     }
 } 

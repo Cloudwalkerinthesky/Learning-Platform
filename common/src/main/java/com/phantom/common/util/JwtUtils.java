@@ -15,6 +15,7 @@ import javax.annotation.PostConstruct;
 import java.security.Key;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -65,6 +66,25 @@ public class JwtUtils {
         claims.put("username", user.getUsername());
         claims.put("account", user.getAccount());
         claims.put("roles", roles);
+        
+        return Jwts.builder()
+                .setClaims(claims)
+                .setIssuedAt(new Date())
+                .setExpiration(new Date(System.currentTimeMillis() + expiration))
+                .signWith(key, SignatureAlgorithm.HS256)
+                .compact();
+    }
+    
+    /**
+     * 生成JWT token（带角色和权限信息）- RBAC支持
+     */
+    public String generateTokenWithRolePermissions(UserBaseInfoDTO user, String role, List<String> permissions) {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("userId", user.getId());
+        claims.put("username", user.getUsername());
+        claims.put("account", user.getAccount());
+        claims.put("role", role);
+        claims.put("permissions", permissions);
         
         return Jwts.builder()
                 .setClaims(claims)

@@ -13,6 +13,7 @@ import org.springframework.security.config.web.server.ServerHttpSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.server.SecurityWebFilterChain;
+import org.springframework.web.reactive.function.client.WebClient;
 
 @Configuration
 @EnableR2dbcRepositories(basePackages = "com.phantom.apigateway.repository")
@@ -40,6 +41,14 @@ public class GatewayConfig {
                 .hashValue(new StringRedisSerializer())
                 .build();
         return new ReactiveRedisTemplate<>(connectionFactory, serializationContext);
+    }
+
+    /**
+     * WebClient.Builder配置 - 用于服务间调用
+     */
+    @Bean
+    public WebClient.Builder webClientBuilder() {
+        return WebClient.builder();
     }
 
     /**
